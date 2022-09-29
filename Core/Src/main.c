@@ -49,7 +49,10 @@ UART_HandleTypeDef huart2;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
+uint8_t c[20];
 void set_pin(uint8_t);
+void getc(uint8_t *c);
+void puts(uint8_t *c);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -89,31 +92,22 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
+	HAL_UART_Transmit(&huart2,(uint8_t *)"hi", 2,1000);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  uint8_t txdata[30];
+	  getc(txdata);
+//	 if(c!='a')
+//		 HAL_GPIO_WritePin(GPIOB,GPIO_PIN_3,1);
 
-//	  uint8_t txdata[30]="Welcome to Zilogic System\r\n";
-//	  HAL_UART_Transmit(&huart2,txdata,sizeof(txdata),100);
-		uint8_t c = '\0';
-		HAL_UART_Receive(&huart2, &c, sizeof(c), 10);
-		HAL_Delay(1000);
-		HAL_UART_Transmit(&huart2,c,sizeof(c),100);
-		HAL_Delay(1000);
-////	  uint8_t udata;
-////	  HAL_UART_Receive(&huart2, &udata, sizeof(udata),100);
-//	  if(c=='o') {
-//
-//		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_3,1);
-//
-//		  uint8_t txdata[30]="Welcome to Zilogic System\r\n";
-//		  HAL_UART_Transmit(&huart2,txdata,sizeof(txdata),100);
-//	  }
-//	  //set_pin(udata);
+
+	// uint8_t txdata[30]="Welcome to Zilogic System\r\n";
+	 puts(txdata);
+
   }
   /* USER CODE END 3 */
 }
@@ -124,7 +118,16 @@ void set_pin(uint8_t txdata)
 	 //uint8_t txdata[30]="Welcome to Zilogic System\r\n";
 	HAL_UART_Transmit(&huart2,txdata,sizeof(txdata),100);
 }
-
+void getc(uint8_t *c)
+{
+	HAL_UART_Receive(&huart2, c, 1, 10000);
+	HAL_Delay(300);
+}
+void puts(uint8_t *c)
+{
+	HAL_UART_Transmit(&huart2, c, strlen(c) ,1000);
+	HAL_Delay(300);
+}
 /**
   * @brief System Clock Configuration
   * @retval None
