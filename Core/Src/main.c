@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include <stdbool.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -40,6 +41,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_usart2_rx;
 
 /* USER CODE BEGIN PV */
 
@@ -48,11 +50,20 @@ UART_HandleTypeDef huart2;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
-uint8_t c[20];
-void set_pin(uint8_t);
-void getc(uint8_t *c);
-void puts(uint8_t *c);
+
+
+bool gpio_get_pin(int);
+void gpio_set_pin(int, bool);
+void mdelay(int );
+char serial_getc();
+void serial_putc(char);
+#define TIMEOUT 10000
+
+uint8_t udata;
+
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -90,48 +101,54 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-	HAL_UART_Transmit(&huart2,(uint8_t *)"hi", 2,1000);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  uint8_t txdata[30];
-	  getc(txdata);
-//	 if(c!='a')
-//		 HAL_GPIO_WritePin(GPIOB,GPIO_PIN_3,1);
-
-
-	// uint8_t txdata[30]="Welcome to Zilogic System\r\n";
-	 puts(txdata);
-
+		udata = serial_getc();
+		serial_putc(udata);
+    /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
+bool gpio_get_pin(int gpio) {
+	// Relays are by default connected with GPIOB
+	uint16_t z_gpio = (uint16_t) gpio;
+	return HAL_GPIO_ReadPin(GPIOB, z_gpio);
 
+}
+void gpio_set_pin(int gpio, bool value) {
+	uint16_t z_gpio = (uint16_t) gpio;
+	if (value) {
+		HAL_GPIO_WritePin(GPIOB, z_gpio, GPIO_PIN_SET);
+	} else {
+		HAL_GPIO_WritePin(GPIOB, z_gpio, GPIO_PIN_RESET);
+	}
+}
 
-void set_pin(uint8_t txdata)
-{
-	 //uint8_t txdata[30]="Welcome to Zilogic System\r\n";
-	HAL_UART_Transmit(&huart2,txdata,sizeof(txdata),100);
+char serial_getc() {
+    uint8_t c = '\0';
+	HAL_UART_Receive(&huart2, &c, sizeof(c), TIMEOUT);
+	return (char)c;
 }
-void getc(uint8_t *c)
-{
-	HAL_UART_Receive(&huart2, c, 1, 10000);
-	HAL_Delay(300);
+void serial_putc(char c) {
+	HAL_UART_Transmit(&huart2, &c, sizeof(c), TIMEOUT);// Sending in normal mode
+	mdelay(100);
 }
-void puts(uint8_t *c)
-{
-	HAL_UART_Transmit(&huart2, c, strlen(c) ,1000);
-	HAL_Delay(300);
+
+void serial_puts(char str[]) {
+	HAL_UART_Transmit(&huart2,str,sizeof(str), TIMEOUT);
+	mdelay(100);
 }
-/**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+
+void mdelay(int delay) {
+	HAL_Delay(delay);
+}
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -208,6 +225,22 @@ static void MX_USART2_UART_Init(void)
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel4_5_6_7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel4_5_6_7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel4_5_6_7_IRQn);
 
 }
 
